@@ -211,25 +211,14 @@
   .reason-row .txt{font-size:16px; color:#f2ecff; font-weight:600;}
   .reason-row .sub{font-size:12.5px; color:#a89bc4; font-weight:400; margin-top:2px;}
   .reason-row .arrow{margin-left:auto; color:#a89bc4; font-size:18px;}
-
-  /* ---- Screen: Best Boss photo ---- */
-  .boss-photo{
-    width:100%;
-    max-width:280px;
-    aspect-ratio:1/1;
-    border-radius:22px;
-    margin:0 auto 22px;
-    object-fit:cover;
-    box-shadow:var(--shadow);
-  }
-  .boss-photo.ph{
-    display:flex;align-items:center;justify-content:center;
-    background:rgba(255,255,255,0.06);
-    border:1.5px dashed rgba(255,255,255,0.25);
-    color:#a89bc4;font-size:13px;text-align:center;padding:20px;
+  .blink-icon{ animation:blinkIcon 1.3s ease-in-out infinite; display:inline-block; }
+  @keyframes blinkIcon{
+    0%,100%{ opacity:1; transform:scale(1); }
+    50%{ opacity:.35; transform:scale(0.85); }
   }
 
   
+
   /* ---- Screen 4 : OS-style save dialog ---- */
   .dialog{
     background:var(--card);
@@ -283,6 +272,23 @@
   .checkbox.checked{
     background:var(--green);
     border-color:var(--green);
+  }
+  .option.save-option{
+    animation:savePulse 1.8s ease-in-out infinite;
+  }
+  .option.save-option:active{
+    animation:saveBounce .45s ease;
+  }
+  @keyframes savePulse{
+    0%,100%{ transform:scale(1); }
+    50%{ transform:scale(1.04); }
+  }
+  @keyframes saveBounce{
+    0%{ transform:scale(1); }
+    30%{ transform:scale(0.82); }
+    55%{ transform:scale(1.15); }
+    75%{ transform:scale(0.95); }
+    100%{ transform:scale(1); }
   }
   .dodge-zone{
     position:relative;
@@ -550,6 +556,78 @@
   }
   .dots span.on{background:var(--gold); width:20px; border-radius:5px;}
 
+  /* ---- Panel "cảm nghĩ về Sếp" (desktop: cố định bên phải) ---- */
+  .sentiment-panel{
+    position:fixed;
+    top:20px; right:20px;
+    width:300px;
+    max-height:calc(100vh - 40px);
+    background:var(--card);
+    border-radius:22px;
+    box-shadow:var(--shadow);
+    display:flex; flex-direction:column;
+    overflow:hidden;
+    z-index:400;
+    transition:transform .35s ease;
+  }
+  .sentiment-panel .sp-head{
+    padding:16px 18px 10px;
+    font-family:'Baloo 2'; font-weight:700; font-size:15px; color:var(--ink);
+    border-bottom:1px solid var(--line);
+  }
+  .sentiment-list{
+    flex:1; overflow-y:auto; padding:12px 14px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .sentiment-bubble{
+    background:#fffdf7; border:1px solid var(--line); border-radius:14px 14px 14px 4px;
+    padding:8px 12px; font-size:12.5px; color:var(--ink); align-self:flex-start; max-width:90%;
+  }
+  .sentiment-bubble b{ color:var(--pink); }
+  .sentiment-input-row{
+    display:flex; gap:6px; padding:10px 14px 14px; border-top:1px solid var(--line);
+  }
+  .sentiment-input-row input{
+    flex:1; border:1.5px solid var(--line); border-radius:999px;
+    padding:8px 12px; font-size:12.5px; font-family:'Inter';
+  }
+  .sentiment-input-row button{
+    border:none; background:var(--ink); color:#fff; border-radius:999px;
+    padding:0 14px; font-size:12.5px; font-weight:700; cursor:pointer;
+  }
+
+  /* ---- Nút thỏ mở panel (chỉ hiện trên mobile) ---- */
+  .bunny-toggle{
+    position:fixed; right:16px; bottom:24px;
+    width:56px; height:56px; border-radius:50%;
+    background:linear-gradient(135deg,#fff, #ffe8d6);
+    border:none; font-size:28px; cursor:pointer;
+    align-items:center; justify-content:center;
+    box-shadow:0 12px 26px -8px rgba(0,0,0,0.5);
+    z-index:600;
+    animation:bunnyWiggle 2.4s ease-in-out infinite;
+    display:none;
+  }
+  @keyframes bunnyWiggle{
+    0%,100%{ transform:rotate(0deg); }
+    25%{ transform:rotate(-10deg); }
+    75%{ transform:rotate(10deg); }
+  }
+  .hidden{ display:none !important; }
+
+  @media (max-width: 900px){
+    .bunny-toggle{ display:flex; }
+    .sentiment-panel{
+      top:auto; bottom:0; right:0;
+      width:86vw; max-width:360px;
+      height:70vh; max-height:70vh;
+      border-radius:22px 0 0 22px;
+      transform:translateX(110%);
+    }
+    .sentiment-panel.open{ transform:translateX(0); }
+  }
+
+
   @media (prefers-reduced-motion: reduce){
     *{transition:none !important; animation:none !important;}
   }
@@ -590,32 +668,15 @@
     <div class="score-num">5.0</div>
     <div class="score-outof">trên 5.0 · từ tất cả mọi người</div>
     <div class="reasons" id="reasons">
-      <div class="reason-row" onclick="chooseFeeling('boss')">
-        <span class="emoji">❤️</span>
+      <div class="reason-row" onclick="goTo('s-dialog')">
+        <span class="emoji blink-icon">✨</span>
         <span>
-          <div class="txt">Best Boss</div>
-          <div class="sub">Xem ảnh xinh của sếp</div>
-        </span>
-        <span class="arrow">→</span>
-      </div>
-      <div class="reason-row" onclick="chooseFeeling('save')">
-        <span class="emoji">💙</span>
-        <span>
-          <div class="txt">Muốn "Save" lại mãi</div>
+          <div class="txt">Khoảnh khắc 100 điểm</div>
           <div class="sub">Lưu lại khoảnh khắc hôm nay</div>
         </span>
         <span class="arrow">→</span>
       </div>
     </div>
-  </section>
-
-  <!-- Screen 3b: Best Boss photo -->
-  <section class="screen" id="s-bestboss">
-    <div class="eyebrow">❤️ Best Boss</div>
-    <div id="bossPhotoWrap"></div>
-    <h1 style="font-size:22px;">Sếp xịn nhất nhà!</h1>
-    <p class="lead">Cảm ơn sếp vì một năm luôn hết mình vì cả team ❤️</p>
-    <button class="btn" onclick="goTo('s-dialog')">Tiếp tục</button>
   </section>
 
   <!-- Screen 4: OS-style save dialog -->
@@ -629,7 +690,7 @@
         <div class="dodge-zone">
           <button class="cancel-dodge" id="cancelBtn">❌ Cancel</button>
         </div>
-        <div class="option">
+        <div class="option save-option" onclick="doSave()">
           <span class="checkbox checked">✓</span> Save
         </div>
       </div>
@@ -644,7 +705,7 @@
   <section class="screen" id="s-save">
     <div class="save-word" id="saveWord">SAVE!</div>
     <p class="lead" style="margin-top:16px;">Ngày hôm nay đã được lưu lại 💾</p>
-    <button class="btn" onclick="goTo('s-album')">Xem album kỷ niệm</button>
+    <button class="btn" onclick="enterAlbum()">Xem album kỷ niệm</button>
   </section>
 
   <!-- Screen 6: Album grid -->
@@ -699,6 +760,24 @@
   </div>
 </div>
 
+<!-- Modal: hỏi cảm nghĩ trước khi vào album -->
+<div class="modal-overlay" id="askSentimentModal">
+  <div class="modal-card">
+    <h3>Trước khi vào album... 💭</h3>
+    <p style="font-size:13px;color:var(--ink-soft);margin:-8px 0 16px;">Miêu tả Sếp bằng 1 từ hoặc 1 câu bạn nghĩ đến nhé!</p>
+    <div class="field">
+      <label>Tên bạn</label>
+      <input type="text" id="sentimentNameInput" placeholder="VD: Minh Thuỷ">
+    </div>
+    <div class="field">
+      <label>Cảm nghĩ về Sếp</label>
+      <input type="text" id="sentimentQInput" placeholder="VD: Tâm lý cực kỳ 💯">
+    </div>
+    <button class="btn" style="width:100%;" onclick="submitSentiment()">Gửi & vào Album</button>
+    <button class="btn ghost" style="width:100%;margin-top:8px;color:var(--ink-soft);border-color:var(--line);" onclick="skipSentiment()">Bỏ qua</button>
+  </div>
+</div>
+
 <!-- Modal: hỏi tên trước khi react/bình luận -->
 <div class="modal-overlay" id="askNameModal">
   <div class="modal-card">
@@ -709,6 +788,17 @@
     <button class="btn" style="width:100%;" onclick="confirmName()">Xong</button>
   </div>
 </div>
+
+<!-- Panel: mọi người nói gì về Sếp (desktop hiện bên phải, mobile bấm thỏ để mở) -->
+<div class="sentiment-panel hidden" id="sentimentPanel">
+  <div class="sp-head">💬 Mọi người nói gì về Sếp</div>
+  <div class="sentiment-list" id="sentimentList"></div>
+  <div class="sentiment-input-row">
+    <input type="text" id="sentimentQuickInput" placeholder="1 từ về Sếp...">
+    <button onclick="submitQuickSentiment()">Gửi</button>
+  </div>
+</div>
+<button class="bunny-toggle hidden" id="bunnyToggle" onclick="toggleSentimentPanel()">🐭</button>
 
 <script>
   /* =========================================================
@@ -743,15 +833,9 @@
   }catch(e){ console.error('Firebase init lỗi:', e); }
 
   /* =========================================================
-     ẢNH SẾP (màn "Best Boss"): điền tên file ảnh sếp bạn bỏ
-     vào thư mục /photos. Ví dụ: "photos/sep.jpg"
-  ========================================================= */
-  const bossPhoto = ""; // "photos/sep.jpg"
-
-  /* =========================================================
      DÒNG CHỮ CHẠY ở đầu Album — sửa nội dung trong dấu " " này
   ========================================================= */
-  const marqueeText = "🚨 Breaking News: Đại mỹ nhân Dung Cao vừa update lên v42.0. MỸ NỮ TOÀN NĂNG chúc Sếp flex mãi nụ cười, chốt mãi niềm vui. Còn ai ghé album hôm nay thì xin mời mang vía tốt về, để vía xui ở lại nhé! 🍀✨";
+  const marqueeText = "💅 Breaking News: Đại mỹ nhân Dung Cao đã cập nhật thành công phiên bản 42.0! MỸ NỮ TOÀN NĂNG chúc Sếp visual lên hương, tiền vào như nước. Chúc cả nhà xem album này một ngày thật nhiều niềm vui! 💛";
   const marqueeSpaced = marqueeText + "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0";
   document.getElementById('marqueeText1').textContent = marqueeSpaced;
   document.getElementById('marqueeText2').textContent = marqueeSpaced;
@@ -844,46 +928,47 @@
   order.forEach(()=>{ const d=document.createElement('span'); dotsEl.appendChild(d); });
 
   function updateDots(id){
-    // s-bestboss is a side-branch off s-score, so it shares the same dot
-    const idx = order.indexOf(id==='s-bestboss' ? 's-score' : id);
+    const idx = order.indexOf(id);
     [...dotsEl.children].forEach((d,i)=>d.classList.toggle('on', i===idx));
   }
 
-  function goTo(id){
+  function setAlbumExtrasVisible(visible){
+    const panel = document.getElementById('sentimentPanel');
+    const bunny = document.getElementById('bunnyToggle');
+    if(visible){
+      panel.classList.remove('hidden');
+      bunny.classList.remove('hidden');
+    } else {
+      panel.classList.add('hidden');
+      bunny.classList.add('hidden');
+      panel.classList.remove('open');
+    }
+  }
+
+  function goTo(id, push){
+    if(push === undefined) push = true;
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     updateDots(id);
     if(id==='s-score') revealReasons();
-    if(id==='s-bestboss') renderBossPhoto();
     if(id==='s-album') loadEntries();
     document.getElementById('fabAdd').style.display = (id==='s-album') ? 'flex' : 'none';
-  }
-  updateDots('s-intro');
-
-  /* --- Choosing a feeling on the score screen --- */
-  function chooseFeeling(type){
-    if(type === 'boss'){
-      goTo('s-bestboss');
-    } else {
-      goTo('s-dialog');
-    }
+    setAlbumExtrasVisible(id==='s-album');
+    if(push) history.pushState({screen:id}, '', '#'+id);
   }
 
-  function renderBossPhoto(){
-    const wrap = document.getElementById('bossPhotoWrap');
-    wrap.innerHTML = '';
-    if(bossPhoto){
-      const img = document.createElement('img');
-      img.className = 'boss-photo';
-      img.src = bossPhoto;
-      img.alt = 'Ảnh sếp';
-      wrap.appendChild(img);
-    } else {
-      const ph = document.createElement('div');
-      ph.className = 'boss-photo ph';
-      ph.textContent = 'Ảnh sếp sẽ ở đây — thêm sau nhé';
-      wrap.appendChild(ph);
-    }
+  window.addEventListener('popstate', (e)=>{
+    const id = (e.state && e.state.screen) || 's-intro';
+    goTo(id, false);
+  });
+
+  /* --- Nếu máy này đã hoàn thành đánh giá trước đó, vào thẳng Album --- */
+  if(localStorage.getItem('flowDone') === '1'){
+    history.replaceState({screen:'s-album'}, '', '#s-album');
+    enterAlbum();
+  } else {
+    history.replaceState({screen:'s-intro'}, '', '#s-intro');
+    updateDots('s-intro');
   }
 
   /* --- Star rating logic --- */
@@ -946,6 +1031,7 @@
   cancelBtn.addEventListener('click', (e)=>{ e.preventDefault(); dodgeCancel(); });
 
   function doSave(){
+    localStorage.setItem('flowDone', '1');
     goTo('s-save');
     launchConfetti();
   }
@@ -971,13 +1057,11 @@
     document.getElementById('addPhotoModal').classList.remove('show');
   }
 
-  /* --- Modal: hỏi tên trước khi react/bình luận --- */
+  /* --- Modal: hỏi tên trước khi react/bình luận (luôn cho sửa tên, không khoá cứng) --- */
   let pendingNameCallback = null;
   function getUserName(callback){
-    const saved = localStorage.getItem('userName');
-    if(saved){ callback(saved); return; }
     pendingNameCallback = callback;
-    document.getElementById('askNameInput').value = '';
+    document.getElementById('askNameInput').value = localStorage.getItem('userName') || '';
     document.getElementById('askNameModal').classList.add('show');
   }
   function confirmName(){
@@ -986,6 +1070,66 @@
     localStorage.setItem('userName', val);
     document.getElementById('askNameModal').classList.remove('show');
     if(pendingNameCallback){ pendingNameCallback(val); pendingNameCallback = null; }
+  }
+
+  /* --- Hỏi cảm nghĩ về Sếp trước khi vào Album (chỉ hỏi 1 lần/máy) --- */
+  function enterAlbum(){
+    if(!localStorage.getItem('sentimentAsked')){
+      document.getElementById('sentimentQInput').value = '';
+      document.getElementById('sentimentNameInput').value = localStorage.getItem('userName') || '';
+      document.getElementById('askSentimentModal').classList.add('show');
+    } else {
+      goTo('s-album');
+    }
+  }
+  function submitSentiment(){
+    const name = document.getElementById('sentimentNameInput').value.trim() || 'Ẩn danh';
+    const text = document.getElementById('sentimentQInput').value.trim();
+    document.getElementById('askSentimentModal').classList.remove('show');
+    localStorage.setItem('sentimentAsked', '1');
+    if(name) localStorage.setItem('userName', name);
+    if(text && fbReady){
+      db.collection('sentiments').add({
+        name, text, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(()=>{});
+    }
+    goTo('s-album');
+  }
+  function skipSentiment(){
+    document.getElementById('askSentimentModal').classList.remove('show');
+    localStorage.setItem('sentimentAsked', '1');
+    goTo('s-album');
+  }
+
+  /* --- Panel "cảm nghĩ về Sếp" --- */
+  function toggleSentimentPanel(){
+    document.getElementById('sentimentPanel').classList.toggle('open');
+  }
+  let sentimentListenerAttached = false;
+  function attachSentimentListener(){
+    if(sentimentListenerAttached || !fbReady) return;
+    sentimentListenerAttached = true;
+    db.collection('sentiments').orderBy('createdAt','desc').limit(60).onSnapshot(snap=>{
+      const list = document.getElementById('sentimentList');
+      list.innerHTML = '';
+      snap.forEach(doc=>{
+        const d = doc.data();
+        const bubble = document.createElement('div');
+        bubble.className = 'sentiment-bubble';
+        bubble.innerHTML = `<b>${escapeHtml(d.name||'Ẩn danh')}:</b> ${escapeHtml(d.text||'')}`;
+        list.appendChild(bubble);
+      });
+    }, err => console.error(err));
+  }
+  function submitQuickSentiment(){
+    const input = document.getElementById('sentimentQuickInput');
+    const text = input.value.trim();
+    if(!text || !fbReady) return;
+    getUserName((name)=>{
+      db.collection('sentiments').add({
+        name, text, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(()=>{ input.value = ''; }).catch(()=>{});
+    });
   }
 
   /* =========================================================
@@ -1048,6 +1192,9 @@
   /* --- File input preview --- */
   const fileInput = document.getElementById('inpPhoto');
   const fileBtnLabel = document.getElementById('fileBtnLabel');
+  document.getElementById('sentimentQuickInput').addEventListener('keydown', (ev)=>{
+    if(ev.key === 'Enter') submitQuickSentiment();
+  });
   fileInput.addEventListener('change', ()=>{
     if(fileInput.files[0]){
       fileBtnLabel.textContent = '✅ ' + fileInput.files[0].name;
@@ -1128,6 +1275,7 @@
       return Promise.resolve();
     }
     list.innerHTML = '<div class="empty-hint">Đang tải album...</div>';
+    attachSentimentListener();
     return db.collection('entries').orderBy('createdAt','desc').get().then(snap=>{
       const entries = [];
       snap.forEach(doc=> entries.push({id:doc.id, ...doc.data()}));
