@@ -273,15 +273,9 @@
     background:var(--green);
     border-color:var(--green);
   }
-  .option.save-option{
-    animation:savePulse 1.8s ease-in-out infinite;
-  }
-  .option.save-option:active{
-    animation:saveBounce .45s ease;
-  }
   @keyframes savePulse{
     0%,100%{ transform:scale(1); }
-    50%{ transform:scale(1.04); }
+    50%{ transform:scale(1.06); }
   }
   @keyframes saveBounce{
     0%{ transform:scale(1); }
@@ -305,6 +299,19 @@
     white-space:nowrap;
     transition:left .16s ease, top .16s ease;
   }
+  .save-dodge{
+    position:absolute;
+    left:0; top:10px;
+    border:none;
+    background:var(--green); color:#fff;
+    font-size:14px; font-weight:700; cursor:pointer;
+    padding:8px 16px; border-radius:999px;
+    white-space:nowrap;
+    box-shadow:0 8px 18px -6px rgba(63,191,127,0.55);
+    animation:savePulse 1.8s ease-in-out infinite;
+    transition:left .16s ease, top .16s ease, transform .15s ease;
+  }
+  .save-dodge:active{ animation:saveBounce .45s ease; }
   .dialog-actions{
     display:flex;
     justify-content:flex-end;
@@ -716,8 +723,8 @@
         <div class="dodge-zone">
           <button class="cancel-dodge" id="cancelBtn">❌ Cancel</button>
         </div>
-        <div class="option save-option" onclick="doSave()">
-          <span class="checkbox checked">✓</span> Save
+        <div class="dodge-zone">
+          <button class="save-dodge" id="saveBtn" onclick="doSave()">✅ Save</button>
         </div>
       </div>
       <div class="dialog-actions">
@@ -1069,6 +1076,29 @@
   cancelBtn.addEventListener('mouseenter', dodgeCancel);
   cancelBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); dodgeCancel(); });
   cancelBtn.addEventListener('click', (e)=>{ e.preventDefault(); dodgeCancel(); });
+
+  /* --- Nút Save cũng chạy chạy khi rê chuột, nhưng vẫn bấm trúng được --- */
+  const savePhrases = [
+    '✅ Ohh chọn đúng rồi đó!',
+    '🎉 Đúng nè, bấm đi!',
+    '💚 Yiii, sáng suốt lắm!',
+    '😍 Đúng gu quá trời!',
+    '👍 Chuẩn không cần chỉnh!',
+    '🌟 Xịn xò ghê ha!',
+    '💫 Quyết định đúng đắn!',
+    '🔥 Đúng là con nhà người ta!'
+  ];
+  const saveBtn = document.getElementById('saveBtn');
+  function dodgeSave(){
+    const zone = saveBtn.parentElement;
+    const maxLeft = Math.max(0, zone.clientWidth - saveBtn.offsetWidth - 4);
+    const maxTop = Math.max(0, zone.clientHeight - saveBtn.offsetHeight - 4);
+    saveBtn.style.left = Math.random() * maxLeft + 'px';
+    saveBtn.style.top = Math.random() * maxTop + 'px';
+    saveBtn.textContent = savePhrases[Math.floor(Math.random()*savePhrases.length)];
+  }
+  // Chỉ né khi rê chuột (desktop) — không né khi chạm, để điện thoại vẫn bấm trúng dễ dàng
+  saveBtn.addEventListener('mouseenter', dodgeSave);
 
   function doSave(){
     localStorage.setItem('flowDone', '1');
