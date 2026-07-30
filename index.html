@@ -859,6 +859,7 @@
   };
   let fbReady = false;
   let db;
+  let sentimentListenerAttached = false;
   try{
     if(firebaseConfig.apiKey){
       firebase.initializeApp(firebaseConfig);
@@ -1175,7 +1176,6 @@
   function toggleSentimentPanel(){
     document.getElementById('sentimentPanel').classList.toggle('open');
   }
-  let sentimentListenerAttached = false;
   function attachSentimentListener(){
     if(sentimentListenerAttached || !fbReady) return;
     sentimentListenerAttached = true;
