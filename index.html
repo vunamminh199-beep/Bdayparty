@@ -615,6 +615,31 @@
   }
   .hidden{ display:none !important; }
 
+  /* ---- Nút quay lại (dùng chung cho mọi màn hình) ---- */
+  .back-btn{
+    position:fixed;
+    top:18px; left:18px;
+    width:40px; height:40px;
+    border-radius:50%;
+    border:none;
+    background:rgba(255,255,255,0.14);
+    color:#fff;
+    font-size:18px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    z-index:700;
+    backdrop-filter:blur(6px);
+    transition:transform .15s ease, background .15s ease;
+  }
+  .back-btn:hover{ background:rgba(255,255,255,0.24); }
+  .back-btn:active{ transform:scale(0.9); }
+
+  .skip-link{
+    background:none; border:none; cursor:pointer;
+    color:#c9bfe0; font-size:12.5px; font-family:'Inter';
+    text-decoration:underline; margin-top:18px;
+  }
+
   @media (max-width: 900px){
     .bunny-toggle{ display:flex; }
     .sentiment-panel{
@@ -661,6 +686,7 @@
       <div class="rating-hint">Giơ tay & chọn 5 sao nào cả nhà ơi ⭐</div>
       <div class="rating-msg" id="ratingMsg"></div>
     </div>
+    <button class="skip-link" onclick="enterAlbum()">Đã đánh giá rồi? Vào Album luôn →</button>
   </section>
 
   <!-- Screen 3: Score reveal + choose feeling -->
@@ -725,6 +751,8 @@
   <div class="dots" id="dots"></div>
 </div>
 
+<button class="back-btn" id="backBtn" onclick="goBack()" style="display:none;">←</button>
+
 <!-- Nút nổi thêm ảnh (chỉ hiện ở màn Album) -->
 <button class="fab-add" id="fabAdd" onclick="openAddPhotoModal()" style="display:none;">＋</button>
 
@@ -774,7 +802,7 @@
       <input type="text" id="sentimentQInput" placeholder="VD: Tâm lý cực kỳ 💯">
     </div>
     <button class="btn" style="width:100%;" onclick="submitSentiment()">Gửi & vào Album</button>
-    <button class="btn ghost" style="width:100%;margin-top:8px;color:var(--ink-soft);border-color:var(--line);" onclick="skipSentiment()">Bỏ qua</button>
+    <button class="btn ghost" style="width:100%;margin-top:8px;color:var(--ink-soft);border-color:var(--line);" onclick="skipSentiment()">Bỏ qua, vào Album luôn →</button>
   </div>
 </div>
 
@@ -945,8 +973,11 @@
     }
   }
 
-  function goTo(id, push){
-    if(push === undefined) push = true;
+  /* --- Điều hướng bằng ngăn xếp nội bộ (không phụ thuộc lịch sử trình duyệt) --- */
+  let navStack = ['s-intro'];
+
+  function goTo(id, recordHistory){
+    if(recordHistory === undefined) recordHistory = true;
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     updateDots(id);
@@ -954,21 +985,30 @@
     if(id==='s-album') loadEntries();
     document.getElementById('fabAdd').style.display = (id==='s-album') ? 'flex' : 'none';
     setAlbumExtrasVisible(id==='s-album');
-    if(push) history.pushState({screen:id}, '', '#'+id);
+    if(recordHistory && navStack[navStack.length-1] !== id){
+      navStack.push(id);
+    }
+    updateBackBtn();
   }
 
-  window.addEventListener('popstate', (e)=>{
-    const id = (e.state && e.state.screen) || 's-intro';
-    goTo(id, false);
-  });
+  function goBack(){
+    if(navStack.length <= 1) return;
+    navStack.pop();
+    const prev = navStack[navStack.length-1];
+    goTo(prev, false);
+  }
+
+  function updateBackBtn(){
+    document.getElementById('backBtn').style.display = navStack.length > 1 ? 'flex' : 'none';
+  }
 
   /* --- Nếu máy này đã hoàn thành đánh giá trước đó, vào thẳng Album --- */
   if(localStorage.getItem('flowDone') === '1'){
-    history.replaceState({screen:'s-album'}, '', '#s-album');
+    navStack = ['s-intro','s-album'];
     enterAlbum();
   } else {
-    history.replaceState({screen:'s-intro'}, '', '#s-intro');
     updateDots('s-intro');
+    updateBackBtn();
   }
 
   /* --- Star rating logic --- */
