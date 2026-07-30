@@ -3,9 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dịch vụ: Sinh nhật của sếp</title>
+<title>Dịch vụ: Boss Premium 42</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --bg-1:#241635;
@@ -156,6 +158,13 @@
     color:var(--ink-soft);
     margin-top:10px;
   }
+  .rating-msg{
+    font-size:13.5px;
+    color:var(--pink);
+    font-weight:700;
+    margin-top:10px;
+    min-height:18px;
+  }
 
   /* ---- Screen 3 : score reveal ---- */
   .score-num{
@@ -220,30 +229,7 @@
     color:#a89bc4;font-size:13px;text-align:center;padding:20px;
   }
 
-  /* ---- Screen: Album CTA ---- */
-  .album-cta{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-    width:100%;
-    padding:16px 20px;
-    border-radius:16px;
-    background:linear-gradient(135deg, var(--pink), var(--gold));
-    color:#241635;
-    font-family:'Baloo 2';
-    font-weight:700;
-    font-size:15.5px;
-    text-decoration:none;
-    box-shadow:0 14px 30px -10px rgba(255,101,132,0.5);
-    margin:18px 0 6px;
-  }
-  .album-hint{font-size:12.5px; color:#a89bc4; margin-bottom:22px;}
-  .highlight-label{
-    font-size:12px; letter-spacing:.1em; text-transform:uppercase;
-    color:#a89bc4; margin:18px 0 10px; text-align:left; width:100%;
-  }
-
+  
   /* ---- Screen 4 : OS-style save dialog ---- */
   .dialog{
     background:var(--card);
@@ -298,6 +284,21 @@
     background:var(--green);
     border-color:var(--green);
   }
+  .dodge-zone{
+    position:relative;
+    height:52px;
+    margin:2px 0 6px;
+  }
+  .cancel-dodge{
+    position:absolute;
+    left:0; top:10px;
+    border:none; background:transparent;
+    color:var(--ink-soft);
+    font-size:14px; font-weight:700; cursor:pointer;
+    padding:7px 12px; border-radius:8px;
+    white-space:nowrap;
+    transition:left .16s ease, top .16s ease;
+  }
   .dialog-actions{
     display:flex;
     justify-content:flex-end;
@@ -322,29 +323,155 @@
     text-shadow:0 0 40px rgba(255,200,87,0.6);
   }
 
-  /* ---- Screen 6 : gallery ---- */
-  .gallery-wrap{width:100%;}
-  .gallery-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;
-    width:100%;
-    margin-top:6px;
+  /* ---- Screen: scrollable (rules / submit / gallery) ---- */
+  .screen.scrollable{
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    justify-content:flex-start;
+    padding-top:46px;
+    padding-bottom:46px;
   }
-  .gallery-grid img{
+
+  /* ---- Album feed ---- */
+  .feed{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
     width:100%;
-    aspect-ratio:1/1;
+  }
+  .feed-item{
+    background:var(--card);
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+    text-align:left;
+  }
+  .feed-item .fi-photo{
+    width:100%;
+    aspect-ratio:4/5;
     object-fit:cover;
-    border-radius:14px;
-    box-shadow:0 10px 20px -8px rgba(0,0,0,0.4);
+    display:block;
+    background:var(--card-dim);
   }
-  .gallery-grid .ph{
-    width:100%;aspect-ratio:1/1;border-radius:14px;
-    background:rgba(255,255,255,0.06);
-    border:1.5px dashed rgba(255,255,255,0.25);
-    display:flex;align-items:center;justify-content:center;
-    color:#a89bc4;font-size:12px;
+  .feed-item .fi-head{
+    padding:12px 14px 2px;
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--ink);
   }
+  .fi-reactions{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    padding:10px 14px 8px;
+  }
+  .reaction-btn{
+    border:1.5px solid var(--line);
+    background:#fffdf7;
+    border-radius:999px;
+    padding:5px 10px;
+    font-size:13px;
+    cursor:pointer;
+    display:flex; align-items:center; gap:4px;
+    color:var(--ink-soft);
+    font-weight:700;
+  }
+  .reaction-btn.active{ background:var(--gold); border-color:var(--gold); color:#241635; }
+  .fi-comments{
+    padding:8px 14px 14px;
+    border-top:1px solid var(--line);
+  }
+  .comment-item{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+    line-height:1.45;
+  }
+  .comment-item b{ color:var(--ink); }
+  .comment-input-row{
+    display:flex; gap:6px; margin-top:8px;
+  }
+  .comment-input-row input{
+    flex:1;
+    border:1.5px solid var(--line);
+    border-radius:999px;
+    padding:9px 13px;
+    font-size:12.5px;
+    font-family:'Inter';
+  }
+  .comment-input-row button{
+    border:none;
+    background:var(--ink);
+    color:#fff;
+    border-radius:999px;
+    padding:0 15px;
+    font-size:12.5px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .empty-hint{color:#a89bc4; font-size:13px; margin-top:10px; text-align:center;}
+
+  /* ---- Floating add-photo button ---- */
+  .fab-add{
+    position:fixed;
+    left:18px; top:50%;
+    transform:translateY(-50%);
+    width:52px; height:52px;
+    border-radius:50%;
+    border:none;
+    background:linear-gradient(135deg, var(--pink), var(--gold));
+    color:#241635;
+    font-size:26px; font-weight:800;
+    line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    box-shadow:0 12px 26px -8px rgba(255,101,132,0.6);
+    z-index:500;
+  }
+
+  /* ---- Modals (add photo / ask name) ---- */
+  .modal-overlay{
+    position:fixed; inset:0;
+    background:rgba(20,10,30,0.65);
+    display:none;
+    align-items:center; justify-content:center;
+    z-index:900; padding:20px;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-card{
+    background:var(--card);
+    border-radius:20px;
+    padding:26px 22px 22px;
+    width:100%; max-width:360px;
+    text-align:left;
+    position:relative;
+    box-shadow:var(--shadow);
+  }
+  .modal-card h3{ font-family:'Baloo 2'; font-size:18px; margin:0 0 16px; }
+  .modal-close{
+    position:absolute; top:16px; right:18px;
+    cursor:pointer; font-size:16px; color:var(--ink-soft);
+  }
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block; font-size:12px; font-weight:700;
+    color:var(--ink-soft); margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em;
+  }
+  .field input[type=text]{
+    width:100%; border:1.5px solid var(--line); border-radius:12px;
+    padding:11px 13px; font-family:'Inter'; font-size:14.5px; color:var(--ink);
+    background:#fff;
+  }
+  .file-btn{
+    display:flex; align-items:center; gap:8px; justify-content:center;
+    border:1.5px dashed var(--line); border-radius:12px;
+    padding:14px; width:100%; cursor:pointer; font-size:13.5px; color:var(--ink-soft);
+    background:#fffdf7; text-align:center;
+  }
+  .file-btn.has-file{border-color:var(--green); border-style:solid; color:var(--ink); font-weight:600;}
+  .submit-status{font-size:13px; margin-top:12px; min-height:18px;}
+  .submit-status.ok{color:var(--green);}
+  .submit-status.err{color:#E5484D;}
 
   .dots{
     position:absolute;
@@ -374,15 +501,15 @@
   <section class="screen active" id="s-intro">
     <div class="badge">🎂</div>
     <div class="eyebrow">Trải nghiệm dịch vụ</div>
-    <h1>Sinh nhật của Sếp</h1>
-    <p class="lead">Hôm nay mọi người đã trải nghiệm dịch vụ "Sinh nhật của Sếp". Mời cả nhà giơ tay đánh giá nhé!</p>
+    <h1>Boss Premium 42</h1>
+    <p class="lead">Hôm nay mọi người đã trải nghiệm dịch vụ "Boss Premium 42". Mời cả nhà giơ tay đánh giá nhé!</p>
     <button class="btn" onclick="goTo('s-rate')">Bắt đầu đánh giá</button>
   </section>
 
   <!-- Screen 2: Star rating -->
   <section class="screen" id="s-rate">
     <div class="rating-card">
-      <p class="app-name">Sinh Nhật Của Sếp</p>
+      <p class="app-name">Boss Premium 42</p>
       <p class="app-sub">Bạn đánh giá trải nghiệm hôm nay bao nhiêu sao?</p>
       <div class="stars" id="stars">
         <button data-v="1">★</button>
@@ -392,6 +519,7 @@
         <button data-v="5">★</button>
       </div>
       <div class="rating-hint">Giơ tay & chọn 5 sao nào cả nhà ơi ⭐</div>
+      <div class="rating-msg" id="ratingMsg"></div>
     </div>
   </section>
 
@@ -436,11 +564,11 @@
       <div class="dialog-body">
         <h2>Do you want to save today?</h2>
         <p>Khoảnh khắc này sẽ không quay lại lần nữa đâu đó.</p>
-        <div class="option" onclick="toggleBox('cancel')">
-          <span class="checkbox" id="box-cancel"></span> Cancel
+        <div class="dodge-zone">
+          <button class="cancel-dodge" id="cancelBtn">❌ Cancel</button>
         </div>
-        <div class="option" onclick="toggleBox('save')">
-          <span class="checkbox checked" id="box-save">✓</span> Save
+        <div class="option">
+          <span class="checkbox checked">✓</span> Save
         </div>
       </div>
       <div class="dialog-actions">
@@ -454,52 +582,90 @@
   <section class="screen" id="s-save">
     <div class="save-word" id="saveWord">SAVE!</div>
     <p class="lead" style="margin-top:16px;">Ngày hôm nay đã được lưu lại 💾</p>
-    <button class="btn" onclick="goTo('s-gallery')">Xem lại khoảnh khắc</button>
+    <button class="btn" onclick="goTo('s-album')">Xem album kỷ niệm</button>
   </section>
 
-  <!-- Screen 6: Gallery / shared album -->
-  <section class="screen" id="s-gallery">
-    <div class="gallery-wrap">
-      <div class="eyebrow">Đã lưu</div>
-      <h1 style="font-size:24px;">Album chung của hôm nay</h1>
-      <p class="lead" style="margin-bottom:6px;">Mọi người cùng thêm ảnh của mình vào nhé, không chỉ ảnh từ BTC đâu 📸</p>
-      <div id="albumCtaWrap"></div>
-      <div id="highlightWrap"></div>
-    </div>
+  <!-- Screen 6: Album feed -->
+  <section class="screen scrollable" id="s-album">
+    <div class="eyebrow">Album kỷ niệm 💛</div>
+    <h1 style="font-size:24px;">Khoảnh khắc mọi người</h1>
+    <div class="feed" id="feedList"></div>
+    <div class="empty-hint" id="feedEmpty" style="display:none;">Chưa có ảnh nào — bấm nút + để thêm ảnh đầu tiên nhé!</div>
   </section>
 
   <div class="dots" id="dots"></div>
 </div>
 
+<!-- Nút nổi thêm ảnh (chỉ hiện ở màn Album) -->
+<button class="fab-add" id="fabAdd" onclick="openAddPhotoModal()" style="display:none;">＋</button>
+
+<!-- Modal: thêm ảnh vào album -->
+<div class="modal-overlay" id="addPhotoModal">
+  <div class="modal-card">
+    <div class="modal-close" onclick="closeAddPhotoModal()">✕</div>
+    <h3>Thêm ảnh của bạn 📸</h3>
+    <div class="field">
+      <label>Tên bạn</label>
+      <input type="text" id="inpName" placeholder="VD: Minh Thuỷ">
+    </div>
+    <div class="field">
+      <label>Ảnh</label>
+      <label class="file-btn" id="fileBtnLabel" for="inpPhoto">📷 Chọn ảnh từ máy</label>
+      <input type="file" id="inpPhoto" accept="image/*" style="display:none;">
+    </div>
+    <button class="btn" style="width:100%;" onclick="submitEntry()" id="submitBtn">Đăng vào album</button>
+    <div class="submit-status" id="submitStatus"></div>
+  </div>
+</div>
+
+<!-- Modal: hỏi tên trước khi react/bình luận -->
+<div class="modal-overlay" id="askNameModal">
+  <div class="modal-card">
+    <h3>Bạn tên gì vậy? 👋</h3>
+    <div class="field">
+      <input type="text" id="askNameInput" placeholder="Nhập tên của bạn">
+    </div>
+    <button class="btn" style="width:100%;" onclick="confirmName()">Xong</button>
+  </div>
+</div>
+
 <script>
   /* =========================================================
-     1) ẢNH SẾP: điền tên file ảnh sếp bạn bỏ vào thư mục /photos
-        Ví dụ: "photos/sep.jpg"
+     FIREBASE CONFIG — bắt buộc điền để tính năng gửi ảnh/lời
+     chúc hoạt động. Cách lấy:
+     1) console.firebase.google.com → tạo project mới (free)
+     2) Vào Databases & Storage > Firestore → Create database
+        (chọn "Start in test mode" để làm nhanh cho sự kiện)
+     3) Vào Project settings (biểu tượng bánh răng) > cuộn xuống
+        "Your apps" > bấm biểu tượng </> để thêm Web app
+     4) Copy đoạn firebaseConfig dán đè vào bên dưới
+     Lưu ý: KHÔNG cần bật Firebase Storage (Google hiện bắt
+     nâng cấp gói trả phí mới dùng được) — ảnh sẽ được nén nhỏ
+     và lưu thẳng trong Firestore, vẫn hoàn toàn miễn phí.
+  ========================================================= */
+  const firebaseConfig = {
+    apiKey: "AIzaSyBOkfJ6LpMyUHLBFwfe1r4vhLGhUE3k6Yg",
+    authDomain: "sweet-4-2.firebaseapp.com",
+    projectId: "sweet-4-2",
+    storageBucket: "sweet-4-2.firebasestorage.app",
+    messagingSenderId: "228508625290",
+    appId: "1:228508625290:web:72a0d39d6942437c510073"
+  };
+  let fbReady = false;
+  let db;
+  try{
+    if(firebaseConfig.apiKey){
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      fbReady = true;
+    }
+  }catch(e){ console.error('Firebase init lỗi:', e); }
+
+  /* =========================================================
+     ẢNH SẾP (màn "Best Boss"): điền tên file ảnh sếp bạn bỏ
+     vào thư mục /photos. Ví dụ: "photos/sep.jpg"
   ========================================================= */
   const bossPhoto = ""; // "photos/sep.jpg"
-
-  /* =========================================================
-     2) ALBUM CHUNG: đây là trang tĩnh (GitHub Pages), không tự
-        nhận ảnh upload từ mọi người được. Cách dễ nhất là tạo
-        1 album chung bên ngoài rồi dán link vào đây, ví dụ:
-        - Google Photos: tạo album > bật "Cộng tác" > Copy link
-        - Google Drive: tạo thư mục > Share > "Anyone with the
-          link" > Editor > Copy link
-        Mọi người bấm nút trong app sẽ được dẫn sang đó để tự
-        thêm ảnh của mình.
-  ========================================================= */
-  const albumLink = ""; // "https://photos.app.goo.gl/xxxxxxxx"
-
-  /* =========================================================
-     3) (Tuỳ chọn) Ảnh nổi bật do BTC chọn sẵn, hiện thêm bên
-        dưới nút album. Để trống nếu không cần.
-  ========================================================= */
-  const photos = [
-    // "photos/1.jpg",
-    // "photos/2.jpg",
-    // "photos/3.jpg",
-    // "photos/4.jpg",
-  ];
 
   /* =========================================================
      Confetti tự chế (không phụ thuộc CDN ngoài) — tránh lỗi mạng
@@ -584,7 +750,7 @@
     }
   }
 
-  const order = ['s-intro','s-rate','s-score','s-dialog','s-save','s-gallery'];
+  const order = ['s-intro','s-rate','s-score','s-dialog','s-save','s-album'];
   const dotsEl = document.getElementById('dots');
   order.forEach(()=>{ const d=document.createElement('span'); dotsEl.appendChild(d); });
 
@@ -600,7 +766,8 @@
     updateDots(id);
     if(id==='s-score') revealReasons();
     if(id==='s-bestboss') renderBossPhoto();
-    if(id==='s-gallery') renderGallery();
+    if(id==='s-album') loadEntries();
+    document.getElementById('fabAdd').style.display = (id==='s-album') ? 'flex' : 'none';
   }
   updateDots('s-intro');
 
@@ -632,6 +799,13 @@
 
   /* --- Star rating logic --- */
   const starButtons = document.querySelectorAll('#stars button');
+  const ratingMsgEl = document.getElementById('ratingMsg');
+  const starQuotes = [
+    '1 sao thôi á?? Sếp nghe được là dỗi đó 😱',
+    '2 sao... chắc quên phần bánh kem rồi 🎂😅',
+    '3 sao an toàn quá, can đảm hơn xem nào 😏',
+    '4 sao?? Còn thiếu đúng 1 xíu xíu nữa thôi mà 🤏😆'
+  ];
   let currentRating = 0;
   starButtons.forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -639,8 +813,11 @@
       currentRating = v;
       starButtons.forEach(b=> b.classList.toggle('lit', parseInt(b.dataset.v) <= v));
       if(v === 5){
+        ratingMsgEl.textContent = '';
         confetti({particleCount:70, spread:70, origin:{y:0.6}, colors:['#FFC857','#FF6584','#3FBF7F']});
         setTimeout(()=>goTo('s-score'), 900);
+      } else {
+        ratingMsgEl.textContent = starQuotes[v-1];
       }
     });
   });
@@ -654,21 +831,30 @@
     });
   }
 
-  /* --- Save dialog checkboxes --- */
-  let saveChecked = true;
-  function toggleBox(which){
-    const cancelBox = document.getElementById('box-cancel');
-    const saveBox = document.getElementById('box-save');
-    if(which==='save'){
-      saveChecked = true;
-      saveBox.classList.add('checked'); saveBox.textContent='✓';
-      cancelBox.classList.remove('checked'); cancelBox.textContent='';
-    } else {
-      saveChecked = false;
-      cancelBox.classList.add('checked'); cancelBox.textContent='✓';
-      saveBox.classList.remove('checked'); saveBox.textContent='';
-    }
+  /* --- Nút Cancel né chuột, không bao giờ bấm được --- */
+  const cancelPhrases = [
+    '🤔 Nghĩ kỹ chưa đó...',
+    '🙅 Nè nè, đừng chọn vào đây...',
+    '🏃 Trốn nè trốn nè!',
+    '❌ Cancel? Không đời nào!',
+    '🎉 Save đi mà, vui hơn nhiều!',
+    '👀 Bắt được thì cho...',
+    '😆 Nhanh tay lẹ mắt không bắt được em đâu',
+    '😏 Càng đuổi càng vui nè',
+    '🙈 Ấy ấy, không phải đây!'
+  ];
+  const cancelBtn = document.getElementById('cancelBtn');
+  function dodgeCancel(){
+    const zone = cancelBtn.parentElement;
+    const maxLeft = Math.max(0, zone.clientWidth - cancelBtn.offsetWidth - 4);
+    const maxTop = Math.max(0, zone.clientHeight - cancelBtn.offsetHeight - 4);
+    cancelBtn.style.left = Math.random() * maxLeft + 'px';
+    cancelBtn.style.top = Math.random() * maxTop + 'px';
+    cancelBtn.textContent = cancelPhrases[Math.floor(Math.random()*cancelPhrases.length)];
   }
+  cancelBtn.addEventListener('mouseenter', dodgeCancel);
+  cancelBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); dodgeCancel(); });
+  cancelBtn.addEventListener('click', (e)=>{ e.preventDefault(); dodgeCancel(); });
 
   function doSave(){
     goTo('s-save');
@@ -686,44 +872,225 @@
     confetti({particleCount:120, spread:100, origin:{y:0.5}});
   }
 
-  /* --- Album CTA + optional highlight grid --- */
-  function renderGallery(){
-    const ctaWrap = document.getElementById('albumCtaWrap');
-    ctaWrap.innerHTML = '';
-    if(albumLink){
-      const a = document.createElement('a');
-      a.className = 'album-cta';
-      a.href = albumLink;
-      a.target = '_blank';
-      a.rel = 'noopener';
-      a.textContent = '📸 Mở album & thêm ảnh của bạn';
-      ctaWrap.appendChild(a);
+  /* --- Modal: thêm ảnh --- */
+  function openAddPhotoModal(){
+    const saved = localStorage.getItem('userName');
+    if(saved) document.getElementById('inpName').value = saved;
+    document.getElementById('addPhotoModal').classList.add('show');
+  }
+  function closeAddPhotoModal(){
+    document.getElementById('addPhotoModal').classList.remove('show');
+  }
+
+  /* --- Modal: hỏi tên trước khi react/bình luận --- */
+  let pendingNameCallback = null;
+  function getUserName(callback){
+    const saved = localStorage.getItem('userName');
+    if(saved){ callback(saved); return; }
+    pendingNameCallback = callback;
+    document.getElementById('askNameInput').value = '';
+    document.getElementById('askNameModal').classList.add('show');
+  }
+  function confirmName(){
+    const val = document.getElementById('askNameInput').value.trim();
+    if(!val) return;
+    localStorage.setItem('userName', val);
+    document.getElementById('askNameModal').classList.remove('show');
+    if(pendingNameCallback){ pendingNameCallback(val); pendingNameCallback = null; }
+  }
+
+  /* --- Nén ảnh về kích thước nhỏ, trả về base64 data URL --- */
+  function compressImage(file, maxDim, quality){
+    maxDim = maxDim || 900;
+    quality = quality || 0.65;
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = (e)=>{
+        const img = new Image();
+        img.onload = ()=>{
+          let w = img.width, h = img.height;
+          if(w > h){ if(w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; } }
+          else { if(h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; } }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /* --- File input preview --- */
+  const fileInput = document.getElementById('inpPhoto');
+  const fileBtnLabel = document.getElementById('fileBtnLabel');
+  fileInput.addEventListener('change', ()=>{
+    if(fileInput.files[0]){
+      fileBtnLabel.textContent = '✅ ' + fileInput.files[0].name;
+      fileBtnLabel.classList.add('has-file');
     } else {
-      const hint = document.createElement('div');
-      hint.className = 'album-hint';
-      hint.style.marginTop = '14px';
-      hint.textContent = 'BTC chưa gắn link album chung — thêm biến albumLink trong file để bật nút này nhé.';
-      ctaWrap.appendChild(hint);
+      fileBtnLabel.textContent = '📷 Chọn ảnh từ máy';
+      fileBtnLabel.classList.remove('has-file');
+    }
+  });
+
+  /* --- Đăng ảnh mới vào album --- */
+  function submitEntry(){
+    const statusEl = document.getElementById('submitStatus');
+    const btn = document.getElementById('submitBtn');
+    const name = document.getElementById('inpName').value.trim();
+    const file = fileInput.files[0];
+
+    if(!fbReady){
+      statusEl.className = 'submit-status err';
+      statusEl.textContent = 'Chưa cấu hình Firebase — báo BTC nhé.';
+      return;
+    }
+    if(!name || !file){
+      statusEl.className = 'submit-status err';
+      statusEl.textContent = 'Nhập tên và chọn ảnh nha bạn ơi.';
+      return;
     }
 
-    const hlWrap = document.getElementById('highlightWrap');
-    hlWrap.innerHTML = '';
-    if(photos.length > 0){
-      const label = document.createElement('div');
-      label.className = 'highlight-label';
-      label.textContent = 'Ảnh nổi bật';
-      hlWrap.appendChild(label);
+    btn.disabled = true;
+    statusEl.className = 'submit-status';
+    statusEl.textContent = 'Đang nén & lưu ảnh...';
 
-      const grid = document.createElement('div');
-      grid.className = 'gallery-grid';
-      photos.forEach(src=>{
-        const img = document.createElement('img');
-        img.src = src;
-        img.alt = 'Khoảnh khắc';
-        grid.appendChild(img);
+    compressImage(file)
+      .then(dataUrl => dataUrl.length > 950000 ? compressImage(file, 650, 0.5) : dataUrl)
+      .then(dataUrl => db.collection('entries').add({
+        name,
+        photoURL: dataUrl,
+        reactions: {heart:0, haha:0, wow:0, fire:0, clap:0},
+        comments: [],
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }))
+      .then(()=>{
+        localStorage.setItem('userName', name);
+        statusEl.className = 'submit-status ok';
+        statusEl.textContent = 'Đã thêm vào album! 🎉';
+        document.getElementById('inpName').value = '';
+        fileInput.value = '';
+        fileBtnLabel.textContent = '📷 Chọn ảnh từ máy';
+        fileBtnLabel.classList.remove('has-file');
+        btn.disabled = false;
+        setTimeout(()=>{ closeAddPhotoModal(); loadEntries(); }, 800);
+      })
+      .catch(err=>{
+        console.error(err);
+        statusEl.className = 'submit-status err';
+        statusEl.textContent = 'Có lỗi khi lưu, thử lại nhé.';
+        btn.disabled = false;
       });
-      hlWrap.appendChild(grid);
+  }
+
+  /* --- Tải & hiển thị album --- */
+  const REACTIONS = [
+    {key:'heart', emoji:'❤️'},
+    {key:'haha',  emoji:'😂'},
+    {key:'wow',   emoji:'😍'},
+    {key:'fire',  emoji:'🔥'},
+    {key:'clap',  emoji:'👏'}
+  ];
+
+  function loadEntries(){
+    const list = document.getElementById('feedList');
+    const empty = document.getElementById('feedEmpty');
+    if(!fbReady){
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      empty.textContent = 'Chưa cấu hình Firebase — báo BTC thêm cấu hình nhé.';
+      return;
     }
+    list.innerHTML = '<div class="empty-hint">Đang tải album...</div>';
+    db.collection('entries').orderBy('createdAt','desc').get().then(snap=>{
+      const entries = [];
+      snap.forEach(doc=> entries.push({id:doc.id, ...doc.data()}));
+      renderFeed(entries);
+    }).catch(err=>{
+      console.error(err);
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      empty.textContent = 'Không tải được album, thử lại sau nhé.';
+    });
+  }
+
+  function renderFeed(entries){
+    const list = document.getElementById('feedList');
+    const empty = document.getElementById('feedEmpty');
+    list.innerHTML = '';
+    if(entries.length === 0){
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    entries.forEach(e=>{
+      const reactedKey = localStorage.getItem('reacted_' + e.id);
+      const reactionsHtml = REACTIONS.map(r=>{
+        const count = (e.reactions && e.reactions[r.key]) || 0;
+        const active = reactedKey === r.key ? 'active' : '';
+        return `<button class="reaction-btn ${active}" data-key="${r.key}">${r.emoji}${count>0 ? ' '+count : ''}</button>`;
+      }).join('');
+      const commentsHtml = (e.comments||[]).map(c=>
+        `<div class="comment-item"><b>${escapeHtml(c.name)}:</b> ${escapeHtml(c.text)}</div>`
+      ).join('');
+
+      const item = document.createElement('div');
+      item.className = 'feed-item';
+      item.innerHTML = `
+        <img class="fi-photo" src="${e.photoURL}" alt="Ảnh của ${escapeHtml(e.name)}">
+        <div class="fi-head">📸 ${escapeHtml(e.name)}</div>
+        <div class="fi-reactions">${reactionsHtml}</div>
+        <div class="fi-comments">
+          ${commentsHtml}
+          <div class="comment-input-row">
+            <input type="text" placeholder="Viết bình luận...">
+            <button>Gửi</button>
+          </div>
+        </div>`;
+
+      item.querySelectorAll('.reaction-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=> handleReact(e.id, btn.dataset.key));
+      });
+      const commentInput = item.querySelector('.comment-input-row input');
+      const commentBtn = item.querySelector('.comment-input-row button');
+      commentBtn.addEventListener('click', ()=> handleComment(e.id, commentInput));
+      commentInput.addEventListener('keydown', (ev)=>{ if(ev.key === 'Enter') handleComment(e.id, commentInput); });
+
+      list.appendChild(item);
+    });
+  }
+
+  function handleReact(entryId, key){
+    const storeKey = 'reacted_' + entryId;
+    if(localStorage.getItem(storeKey)) return; // mỗi người chỉ react 1 lần / ảnh
+    getUserName(()=>{
+      localStorage.setItem(storeKey, key);
+      const field = 'reactions.' + key;
+      db.collection('entries').doc(entryId).update({
+        [field]: firebase.firestore.FieldValue.increment(1)
+      }).then(loadEntries).catch(()=>{});
+    });
+  }
+
+  function handleComment(entryId, inputEl){
+    const text = inputEl.value.trim();
+    if(!text) return;
+    getUserName((name)=>{
+      db.collection('entries').doc(entryId).update({
+        comments: firebase.firestore.FieldValue.arrayUnion({name, text, ts: Date.now()})
+      }).then(()=>{ inputEl.value=''; loadEntries(); }).catch(()=>{});
+    });
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
   }
 </script>
 </body>
