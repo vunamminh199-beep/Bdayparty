@@ -335,8 +335,8 @@
   /* ---- Album grid (lưới 5 ảnh/hàng) ---- */
   .album-grid{
     display:grid;
-    grid-template-columns:repeat(5, 1fr);
-    gap:5px;
+    grid-template-columns:repeat(3, 1fr);
+    gap:8px;
     width:100%;
   }
   .album-thumb{
@@ -359,9 +359,9 @@
   }
   .album-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
   .album-thumb .thumb-badge{
-    position:absolute; bottom:3px; right:3px;
-    background:rgba(0,0,0,0.6); color:#fff; font-size:9px; font-weight:700;
-    padding:1px 5px; border-radius:999px;
+    position:absolute; bottom:5px; right:5px;
+    background:rgba(0,0,0,0.6); color:#fff; font-size:11px; font-weight:700;
+    padding:2px 7px; border-radius:999px;
   }
 
   /* ---- Photo detail modal ---- */
@@ -939,7 +939,39 @@
     if(pendingNameCallback){ pendingNameCallback(val); pendingNameCallback = null; }
   }
 
-  /* --- Nén ảnh về kích thước nhỏ, trả về base64 data URL --- */
+  /* =========================================================
+     CLOUDINARY CONFIG — dán "Cloud name" và "Upload preset"
+     (unsigned) vào đây để ảnh được lưu chất lượng cao, không
+     bị nén vỡ nét. Nếu để trống, app vẫn chạy bình thường
+     nhưng sẽ tự nén nhỏ ảnh như trước (để lưu tạm vào Firestore).
+  ========================================================= */
+  const CLOUDINARY_CLOUD_NAME = "nc13yrj8";
+  const CLOUDINARY_UPLOAD_PRESET = "bday42_upload";
+
+  function uploadToCloudinary(file){
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    return fetch(url, { method: 'POST', body: formData })
+      .then(res => res.json())
+      .then(data => {
+        if(!data.secure_url) throw new Error('Cloudinary upload thất bại');
+        return data.secure_url;
+      });
+  }
+
+  /* --- Lấy URL ảnh: ưu tiên Cloudinary (nét), rơi về nén nếu chưa cấu hình --- */
+  function getPhotoUrl(file){
+    if(CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET){
+      return uploadToCloudinary(file);
+    }
+    return compressImage(file)
+      .then(dataUrl => dataUrl.length > 950000 ? compressImage(file, 850, 0.6) : dataUrl)
+      .then(dataUrl => dataUrl.length > 950000 ? compressImage(file, 600, 0.45) : dataUrl);
+  }
+
+  /* --- Nén ảnh về kích thước nhỏ, trả về base64 data URL (dự phòng khi chưa có Cloudinary) --- */
   function compressImage(file, maxDim, quality){
     maxDim = maxDim || 1100;
     quality = quality || 0.78;
@@ -997,14 +1029,12 @@
 
     btn.disabled = true;
     statusEl.className = 'submit-status';
-    statusEl.textContent = 'Đang nén & lưu ảnh...';
+    statusEl.textContent = 'Đang tải ảnh lên...';
 
-    compressImage(file)
-      .then(dataUrl => dataUrl.length > 950000 ? compressImage(file, 850, 0.6) : dataUrl)
-      .then(dataUrl => dataUrl.length > 950000 ? compressImage(file, 600, 0.45) : dataUrl)
-      .then(dataUrl => db.collection('entries').add({
+    getPhotoUrl(file)
+      .then(photoURL => db.collection('entries').add({
         name,
-        photoURL: dataUrl,
+        photoURL,
         reactions: {heart:0, haha:0, wow:0, fire:0, clap:0},
         comments: [],
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1078,7 +1108,7 @@
       thumb.className = 'album-thumb';
       thumb.style.setProperty('--i', idx % 7);
       thumb.innerHTML = `<img src="${e.photoURL}" alt="Ảnh của ${escapeHtml(e.name)}">` +
-        (total > 0 ? `<span class="thumb-badge">❤️ ${total}</span>` : '');
+        `<span class="thumb-badge">❤️ ${total}</span>`;
       thumb.addEventListener('click', ()=> openPhotoModal(e.id));
       grid.appendChild(thumb);
     });
