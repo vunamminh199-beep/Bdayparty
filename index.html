@@ -342,10 +342,20 @@
   .album-thumb{
     position:relative;
     aspect-ratio:1/1;
-    border-radius:8px;
     overflow:hidden;
     cursor:pointer;
     background:var(--card-dim);
+    animation:jellyMorph 7s ease-in-out infinite;
+    animation-delay:calc(var(--i, 0) * 0.35s);
+    transition:transform .18s ease;
+    box-shadow:0 6px 14px -6px rgba(0,0,0,0.4);
+  }
+  .album-thumb:active{ transform:scale(0.88); }
+  @keyframes jellyMorph{
+    0%,100%{ border-radius:42% 58% 60% 40% / 45% 45% 55% 55%; }
+    25%{ border-radius:58% 42% 45% 55% / 55% 60% 40% 45%; }
+    50%{ border-radius:50% 50% 38% 62% / 62% 38% 60% 40%; }
+    75%{ border-radius:45% 55% 55% 45% / 40% 55% 45% 60%; }
   }
   .album-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
   .album-thumb .thumb-badge{
@@ -1062,10 +1072,11 @@
     }
     empty.style.display = 'none';
 
-    entries.forEach(e=>{
+    entries.forEach((e, idx)=>{
       const total = REACTIONS.reduce((sum,r)=> sum + ((e.reactions && e.reactions[r.key]) || 0), 0);
       const thumb = document.createElement('div');
       thumb.className = 'album-thumb';
+      thumb.style.setProperty('--i', idx % 7);
       thumb.innerHTML = `<img src="${e.photoURL}" alt="Ảnh của ${escapeHtml(e.name)}">` +
         (total > 0 ? `<span class="thumb-badge">❤️ ${total}</span>` : '');
       thumb.addEventListener('click', ()=> openPhotoModal(e.id));
