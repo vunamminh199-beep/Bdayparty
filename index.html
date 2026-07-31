@@ -1221,7 +1221,11 @@
     return fetch(url, { method: 'POST', body: formData })
       .then(res => res.json())
       .then(data => {
-        if(!data.secure_url) throw new Error('Cloudinary upload thất bại');
+        if(!data.secure_url){
+          console.error('Cloudinary trả về:', data);
+          const msg = (data.error && data.error.message) ? data.error.message : 'Cloudinary upload thất bại';
+          throw new Error(msg);
+        }
         return data.secure_url;
       });
   }
@@ -1321,7 +1325,7 @@
       .catch(err=>{
         console.error(err);
         statusEl.className = 'submit-status err';
-        statusEl.textContent = 'Có lỗi khi lưu, thử lại nhé.';
+        statusEl.textContent = 'Lỗi: ' + (err.message || 'thử lại nhé.');
         btn.disabled = false;
       });
   }
