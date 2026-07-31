@@ -661,14 +661,28 @@
     .sentiment-panel.open{ transform:translateX(0); }
   }
 
-  /* ---- Desktop: marquee thành thanh dọc bên trái, thêm chuột chạy lon ton ---- */
+  /* ---- Desktop: marquee cũ (trong Album) chỉ dùng cho mobile, ẩn ở desktop ---- */
   @media (min-width: 901px){
-    .marquee-wrap{
+    .marquee-wrap{ display:none; }
+  }
+
+  /* ---- Marquee riêng cho desktop: thanh dọc bên trái, đặt ngoài .stage để
+     tránh bị kẹt bởi hiệu ứng transform của màn hình đang active ---- */
+  .marquee-wrap-desktop{
+    display:none;
+  }
+  @media (min-width: 901px){
+    .marquee-wrap-desktop{
+      display:block;
       position:fixed;
       top:50%;
       left:0;
       width:min(78vh, 640px);
-      margin-bottom:0;
+      overflow:hidden;
+      background:linear-gradient(90deg, rgba(255,101,132,0.22), rgba(255,200,87,0.22));
+      border:1.5px solid rgba(255,200,87,0.5);
+      padding:10px 0;
+      backdrop-filter:blur(6px);
       transform-origin:0 0;
       transform:rotate(-90deg) translateY(-100%);
       border-radius:0 0 14px 14px;
@@ -833,6 +847,14 @@
 <!-- Nút nổi thêm ảnh (chỉ hiện ở màn Album) -->
 <button class="fab-add" id="fabAdd" onclick="openAddPhotoModal()" style="display:none;">＋</button>
 
+<!-- Marquee riêng cho desktop (thanh dọc bên trái) -->
+<div class="marquee-wrap-desktop">
+  <div class="marquee-track">
+    <span class="marquee-text" id="marqueeTextDesktop1"></span>
+    <span class="marquee-text" id="marqueeTextDesktop2" aria-hidden="true"></span>
+  </div>
+</div>
+
 <!-- Chú chuột chibi chạy lon ton, chỉ hiện trên máy tính -->
 <div class="running-mouse-wrap">
   <svg class="running-mouse" width="64" height="56" viewBox="0 0 120 100">
@@ -964,6 +986,8 @@
   const marqueeSpaced = marqueeText + "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0";
   document.getElementById('marqueeText1').textContent = marqueeSpaced;
   document.getElementById('marqueeText2').textContent = marqueeSpaced;
+  document.getElementById('marqueeTextDesktop1').textContent = marqueeSpaced;
+  document.getElementById('marqueeTextDesktop2').textContent = marqueeSpaced;
 
   /* =========================================================
      Confetti tự chế (không phụ thuộc CDN ngoài) — tránh lỗi mạng
