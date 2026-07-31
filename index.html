@@ -347,16 +347,22 @@
 
   /* ---- Banner chữ chạy (breaking news) ---- */
   .marquee-wrap{
-    position:relative;
-    z-index:50;
-    width:100%;
+    display:none;
+    position:fixed;
+    top:14px;
+    left:14px;
+    right:14px;
+    z-index:650;
     overflow:hidden;
     background:linear-gradient(90deg, rgba(255,101,132,0.22), rgba(255,200,87,0.22));
     border:1.5px solid rgba(255,200,87,0.5);
     border-radius:14px;
     padding:10px 0;
-    margin-bottom:20px;
     backdrop-filter:blur(6px);
+  }
+  .marquee-wrap.show{ display:block; }
+  @media (min-width: 901px){
+    .marquee-wrap{ display:none !important; }
   }
   .marquee-track{
     display:flex;
@@ -658,11 +664,6 @@
     .sentiment-panel.open{ transform:translateX(0); }
   }
 
-  /* ---- Desktop: marquee cũ (trong Album) chỉ dùng cho mobile, ẩn ở desktop ---- */
-  @media (min-width: 901px){
-    .marquee-wrap{ display:none; }
-  }
-
   /* ---- Marquee riêng cho desktop: thanh dọc bên trái, đặt ngoài .stage để
      tránh bị kẹt bởi hiệu ứng transform của màn hình đang active ---- */
   .marquee-wrap-desktop{
@@ -821,13 +822,7 @@
   </section>
 
   <!-- Screen 6: Album grid -->
-  <section class="screen scrollable" id="s-album">
-    <div class="marquee-wrap">
-      <div class="marquee-track">
-        <span class="marquee-text" id="marqueeText1"></span>
-        <span class="marquee-text" id="marqueeText2" aria-hidden="true"></span>
-      </div>
-    </div>
+  <section class="screen scrollable" id="s-album" style="padding-top:78px;">
     <div class="eyebrow">Album kỷ niệm 💛</div>
     <h1 style="font-size:24px;">Khoảnh khắc mọi người</h1>
     <div class="album-grid" id="feedList"></div>
@@ -843,6 +838,14 @@
 <button class="fab-add" id="fabAdd" onclick="openAddPhotoModal()" style="display:none;">＋</button>
 
 <!-- Marquee riêng cho desktop (thanh dọc bên trái) -->
+<!-- Marquee mobile (cố định đầu màn hình, chỉ hiện khi ở màn Album) -->
+<div class="marquee-wrap" id="marqueeMobile">
+  <div class="marquee-track">
+    <span class="marquee-text" id="marqueeText1"></span>
+    <span class="marquee-text" id="marqueeText2" aria-hidden="true"></span>
+  </div>
+</div>
+
 <div class="marquee-wrap-desktop">
   <div class="marquee-track">
     <span class="marquee-text" id="marqueeTextDesktop1"></span>
@@ -1100,6 +1103,7 @@
     if(id==='s-score') revealReasons();
     if(id==='s-album') loadEntries();
     document.getElementById('fabAdd').style.display = (id==='s-album') ? 'flex' : 'none';
+    document.getElementById('marqueeMobile').classList.toggle('show', id==='s-album');
     setAlbumExtrasVisible(id==='s-album');
     if(recordHistory && navStack[navStack.length-1] !== id){
       navStack.push(id);
