@@ -456,6 +456,18 @@
     font-weight:700;
   }
   .reaction-btn.active{ background:var(--gold); border-color:var(--gold); color:#241635; }
+  .pm-reactor-names{
+    display:flex; flex-wrap:wrap; gap:4px;
+    margin:0 0 4px;
+  }
+  .reactor-chip{
+    background:rgba(0,0,0,0.05);
+    border-radius:999px;
+    padding:3px 9px;
+    font-size:11px;
+    color:var(--ink-soft);
+    font-weight:600;
+  }
   .fi-comments{
     padding:8px 0 4px;
     border-top:1px solid var(--line);
@@ -626,6 +638,44 @@
     75%{ transform:rotate(10deg); }
   }
   .hidden{ display:none !important; }
+
+  /* ---- Thẻ ảnh thắng cuộc (desktop) ---- */
+  .winner-card-desktop{
+    display:none;
+  }
+  @media (min-width: 901px){
+    .winner-card-desktop{
+      display:block;
+      position:fixed;
+      top:76px; left:18px;
+      width:170px;
+      background:var(--card);
+      border-radius:18px;
+      padding:12px 12px 14px;
+      box-shadow:var(--shadow);
+      z-index:60;
+      text-align:center;
+    }
+  }
+  .wc-label{ font-family:'Baloo 2'; font-weight:700; font-size:12.5px; color:var(--ink); margin-bottom:8px; }
+  #wcPhoto{ width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:12px; margin-bottom:8px; }
+  .wc-name{ font-weight:700; font-size:13px; color:var(--ink); }
+  .wc-count{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+
+  /* ---- Banner ảnh thắng cuộc (mobile, trong panel) ---- */
+  .winner-banner{
+    background:linear-gradient(135deg, rgba(255,200,87,0.18), rgba(255,101,132,0.18));
+    border:1px solid rgba(255,200,87,0.4);
+    border-radius:14px;
+    padding:10px;
+    margin:12px 14px 0;
+  }
+  .wb-label{ font-family:'Baloo 2'; font-weight:700; font-size:12.5px; color:var(--ink); margin-bottom:6px; }
+  .wb-row{ display:flex; align-items:center; gap:10px; }
+  #wbPhoto{ width:52px; height:52px; object-fit:cover; border-radius:10px; flex-shrink:0; }
+  .wb-name{ font-weight:700; font-size:13px; color:var(--ink); }
+  .wb-count{ font-size:11px; color:var(--ink-soft); }
+
 
   /* ---- Nút quay lại (dùng chung cho mọi màn hình) ---- */
   .back-btn{
@@ -880,6 +930,7 @@
     <div class="pm-body">
       <div class="pm-name" id="pmName"></div>
       <div class="fi-reactions" id="pmReactions"></div>
+      <div class="pm-reactor-names" id="pmReactorNames"></div>
       <div class="fi-comments" id="pmComments"></div>
     </div>
   </div>
@@ -933,8 +984,26 @@
   </div>
 </div>
 
-<!-- Panel: mọi người nói gì về Sếp (desktop hiện bên phải, mobile bấm thỏ để mở) -->
+<!-- Thẻ ảnh thắng cuộc (desktop, hiện ở bên trái sau 20h 31/7) -->
+<div class="winner-card-desktop hidden" id="winnerCardDesktop">
+  <div class="wc-label">🏆 Ảnh chiến thắng</div>
+  <img id="wcPhoto" src="" alt="Ảnh chiến thắng">
+  <div class="wc-name" id="wcName"></div>
+  <div class="wc-count" id="wcCount"></div>
+</div>
+
+<!-- Panel: mọi người nói gì về Sếp (desktop hiện bên phải, mobile bấm chuột để mở) -->
 <div class="sentiment-panel hidden" id="sentimentPanel">
+  <div class="winner-banner hidden" id="winnerBannerMobile">
+    <div class="wb-label">🏆 Ảnh chiến thắng</div>
+    <div class="wb-row">
+      <img id="wbPhoto" src="" alt="Ảnh chiến thắng">
+      <div>
+        <div class="wb-name" id="wbName"></div>
+        <div class="wb-count" id="wbCount"></div>
+      </div>
+    </div>
+  </div>
   <div class="sp-head">💬 Mọi người nói gì về Sếp</div>
   <div class="sentiment-list" id="sentimentList"></div>
   <div class="sentiment-input-row">
@@ -1445,7 +1514,7 @@
       .then(photoURL => db.collection('entries').add({
         name,
         photoURL,
-        reactions: {heart:0, haha:0, wow:0, fire:0, clap:0},
+        reactions: {heart:[], haha:[], wow:[], fire:[], clap:[]},
         comments: [],
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       }))
@@ -1504,6 +1573,7 @@
 
   function renderGrid(entries){
     currentEntries = entries;
+    updateWinnerUI(entries);
     const grid = document.getElementById('feedList');
     const empty = document.getElementById('feedEmpty');
     grid.innerHTML = '';
@@ -1514,7 +1584,7 @@
     empty.style.display = 'none';
 
     entries.forEach((e, idx)=>{
-      const total = REACTIONS.reduce((sum,r)=> sum + ((e.reactions && e.reactions[r.key]) || 0), 0);
+      const total = REACTIONS.reduce((sum,r)=> sum + reactionCount(e, r.key), 0);
       const thumb = document.createElement('div');
       thumb.className = 'album-thumb';
       thumb.style.setProperty('--i', idx % 7);
@@ -1523,6 +1593,46 @@
       thumb.addEventListener('click', ()=> openPhotoModal(e.id));
       grid.appendChild(thumb);
     });
+  }
+
+  /* --- Công bố ảnh thắng cuộc sau 20h00 ngày 31/7/2026 ---
+     Chỉ tính những ảnh được đăng SAU 17h00 chiều nay ---- */
+  const WINNER_DEADLINE = new Date('2026-07-31T20:00:00+07:00').getTime();
+  const ENTRY_CUTOFF = new Date('2026-07-31T17:00:00+07:00').getTime();
+
+  function computeWinner(entries){
+    if(!entries || entries.length === 0) return null;
+    let best = null, bestScore = -1;
+    entries.forEach(e=>{
+      const createdMs = (e.createdAt && e.createdAt.toDate) ? e.createdAt.toDate().getTime() : 0;
+      if(createdMs < ENTRY_CUTOFF) return; // ảnh đăng trước 17h không được xét giải
+      const score = REACTIONS.reduce((sum,r)=> sum + reactionCount(e, r.key), 0);
+      if(score > bestScore){ bestScore = score; best = e; }
+    });
+    if(bestScore <= 0) return null;
+    return { entry: best, score: bestScore };
+  }
+
+  function updateWinnerUI(entries){
+    const dCard = document.getElementById('winnerCardDesktop');
+    const mBanner = document.getElementById('winnerBannerMobile');
+    const passed = Date.now() >= WINNER_DEADLINE;
+    const winner = passed ? computeWinner(entries) : null;
+
+    if(!winner){
+      dCard.classList.add('hidden');
+      mBanner.classList.add('hidden');
+      return;
+    }
+    dCard.classList.remove('hidden');
+    mBanner.classList.remove('hidden');
+    const countText = winner.score + (winner.score === 1 ? ' lượt tương tác' : ' lượt tương tác');
+    document.getElementById('wcPhoto').src = winner.entry.photoURL;
+    document.getElementById('wcName').textContent = winner.entry.name;
+    document.getElementById('wcCount').textContent = countText;
+    document.getElementById('wbPhoto').src = winner.entry.photoURL;
+    document.getElementById('wbName').textContent = winner.entry.name;
+    document.getElementById('wbCount').textContent = countText;
   }
 
   /* --- Modal xem ảnh chi tiết + react + bình luận --- */
@@ -1565,17 +1675,35 @@
     currentPhotoId = null;
   }
 
+  function reactionCount(e, key){
+    const v = e.reactions && e.reactions[key];
+    return Array.isArray(v) ? v.length : (v || 0);
+  }
+  function reactionNames(e, key){
+    const v = e.reactions && e.reactions[key];
+    if(Array.isArray(v)) return v;
+    const n = v || 0;
+    return n > 0 ? Array(n).fill('Người đẹp ẩn danh') : [];
+  }
+
   function renderPmReactions(e){
     const wrap = document.getElementById('pmReactions');
     const reactedKey = localStorage.getItem('reacted_' + e.id);
     wrap.innerHTML = REACTIONS.map(r=>{
-      const count = (e.reactions && e.reactions[r.key]) || 0;
+      const count = reactionCount(e, r.key);
       const active = reactedKey === r.key ? 'active' : '';
       return `<button class="reaction-btn ${active}" data-key="${r.key}">${r.emoji}${count>0 ? ' '+count : ''}</button>`;
     }).join('');
     wrap.querySelectorAll('.reaction-btn').forEach(btn=>{
       btn.addEventListener('click', ()=> handleReact(e.id, btn.dataset.key));
     });
+
+    const namesWrap = document.getElementById('pmReactorNames');
+    const chips = [];
+    REACTIONS.forEach(r=>{
+      reactionNames(e, r.key).forEach(n=> chips.push(`<span class="reactor-chip">${r.emoji} ${escapeHtml(n)}</span>`));
+    });
+    namesWrap.innerHTML = chips.join('');
   }
 
   function renderPmComments(e){
@@ -1597,11 +1725,11 @@
   function handleReact(entryId, key){
     const storeKey = 'reacted_' + entryId;
     if(localStorage.getItem(storeKey)) return; // mỗi người chỉ react 1 lần / ảnh
-    getUserName(()=>{
+    getUserName((name)=>{
       localStorage.setItem(storeKey, key);
       const field = 'reactions.' + key;
       db.collection('entries').doc(entryId).update({
-        [field]: firebase.firestore.FieldValue.increment(1)
+        [field]: firebase.firestore.FieldValue.arrayUnion(name)
       }).then(()=> loadEntries().then(()=>{
         if(currentPhotoId === entryId) openPhotoModal(entryId);
       })).catch(()=>{});
