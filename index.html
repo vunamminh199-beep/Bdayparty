@@ -1216,7 +1216,7 @@
   function uploadToCloudinary(file){
     const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', file, file.name || 'photo.jpg');
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
     return fetch(url, { method: 'POST', body: formData })
       .then(res => res.json())
@@ -1233,11 +1233,39 @@
   /* --- Lấy URL ảnh: ưu tiên Cloudinary (nét), rơi về nén nếu chưa cấu hình --- */
   function getPhotoUrl(file){
     if(CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET){
+      const CLOUDINARY_MAX_BYTES = 10 * 1024 * 1024; // giới hạn 10MB của Cloudinary
+      if(file.size > CLOUDINARY_MAX_BYTES){
+        // Ảnh gốc quá nặng — nén nhẹ (vẫn rất nét, chỉ giảm khi thật sự cần) rồi mới upload
+        return compressImageToBlob(file, 2000, 0.85).then(blob => uploadToCloudinary(blob));
+      }
       return uploadToCloudinary(file);
     }
     return compressImage(file)
       .then(dataUrl => dataUrl.length > 950000 ? compressImage(file, 850, 0.6) : dataUrl)
       .then(dataUrl => dataUrl.length > 950000 ? compressImage(file, 600, 0.45) : dataUrl);
+  }
+
+  /* --- Nén ảnh (giữ chất lượng cao) và trả về dạng Blob để upload lên Cloudinary --- */
+  function compressImageToBlob(file, maxDim, quality){
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = (e)=>{
+        const img = new Image();
+        img.onload = ()=>{
+          let w = img.width, h = img.height;
+          if(w > h){ if(w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; } }
+          else { if(h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; } }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
   /* --- Nén ảnh về kích thước nhỏ, trả về base64 data URL (dự phòng khi chưa có Cloudinary) --- */
